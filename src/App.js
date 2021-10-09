@@ -3,13 +3,12 @@ import './App.scss';
 import './containers/universities/pages/universities-listing/universities-listing.scss';
 import './containers/authenticate/pages/sign-in/sign-in.scss';
 import './containers/authenticate/pages/sign-up/sign-up.scss';
-import { Component, useEffect, useState } from 'react';
+import React, { Component, useContext, useEffect, useState } from 'react';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import Pagination from 'react-bootstrap/Pagination';
 import ReactPaginate from 'react-paginate';
 import { BrowserRouter, Switch, Route, Link } from 'react-router-dom';
 import { ajax } from 'rxjs/ajax'
@@ -131,7 +130,7 @@ function getTotalPageCount(totalRecords, limit) {
 
 
 function ListingPage() {
-  const [data, setData] = useState([]);
+  const { listUni, updateListUni } = useContext(UniversityContext);
   const [keywords, setKeywords] = useState('');
   const [submitValues, setSubmitValues] = useState({ uniName: '' });
 
@@ -142,7 +141,7 @@ function ListingPage() {
   useEffect(() => {
     if (!submitValues.uniName) return () => {};
     const subscription = UniversityApi.search(submitValues)
-      .subscribe(data => setData(data));
+      .subscribe(data => updateListUni(data));
 
     return () => subscription.unsubscribe();
   }, [submitValues])
@@ -172,7 +171,7 @@ function ListingPage() {
           <Col xs={4}>Domain</Col>
           <Col xs={4}>Country</Col>
         </Row>
-        { data.map((n, index) => {
+        { listUni.map((n, index) => {
           const { name, country } = n;
           const domain = n.domains?.length ? n.domains[0] : undefined;
           // return <UniversityItem key={name} name={name} domain={domain} country={country} />;
@@ -191,7 +190,7 @@ function ListingPage() {
           nextLabel={'next'}
           breakLabel={'...'}
           breakClassName={'page-link'}
-          pageCount={getTotalPageCount(data.length, 10)}
+          pageCount={getTotalPageCount(listUni.length, 10)}
           marginPagesDisplayed={2}
           pageRangeDisplayed={5}
           onPageChange={handlePageClick}
@@ -227,18 +226,30 @@ function NavBar() {
   );
 }
 
+const UniversityContext = React.createContext({
+  listUni: [],
+  updateListUni: () => {},
+});
+
 function App() {
+  const [listUni, setListUni] = useState([]);
+
+  const updateListUni = (listUni) => {
+    setListUni(listUni);
+  };
   return (
-    <BrowserRouter>
-      <div className="App">
-        <NavBar />
-        <Switch>
-          <Route exact path='/' component={ListingPage} />
-          <Route path="/sign-in" component={SignIn} />
-          <Route path="/sign-up" component={SignUp} />
-        </Switch>
-      </div>
-    </BrowserRouter>
+    <UniversityContext.Provider value={{ listUni, updateListUni }}>
+      <BrowserRouter>
+        <div className="App">
+          <NavBar />
+          <Switch>
+            <Route exact path='/' component={ListingPage} />
+            <Route path="/sign-in" component={SignIn} />
+            <Route path="/sign-up" component={SignUp} />
+          </Switch>
+        </div>
+      </BrowserRouter>
+    </UniversityContext.Provider>
   );
 }
 
