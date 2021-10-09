@@ -149,19 +149,19 @@ function ListingPage() {
   return (
     <Container className="universities-listing">
       <Container className="universities-listing__searchbar">
-        <Row>
-          <Col xs={4}>
-            <Form>
+        <Row className="justify-content-center">
+          <Col xs={8}>
+            <Form.Group className="input-group mt-3 mb-3">
               <Form.Control
                 type="text"
                 placeholder="Enter a name of university"
                 value={keywords}
                 onChange={evt => setKeywords(evt.target.value)}
               />
-            </Form>
-          </Col>
-          <Col xs={2}>
-            <Button variant="outline-primary" onClick={handleSearchClick}>Search</Button>
+              <div className="input-group-append">
+                <Button variant="outline-primary" onClick={handleSearchClick}>Search</Button>
+              </div>
+            </Form.Group>
           </Col>
         </Row>
       </Container>
