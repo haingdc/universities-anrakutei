@@ -14,6 +14,7 @@ import { BrowserRouter, Switch, Route, Link } from 'react-router-dom';
 import { ajax } from 'rxjs/ajax'
 // TODO: remove
 import { useObservable } from 'rxjs-hooks'
+import { map, mergeMap } from 'rxjs/operators';
 // TODO: remove package: rxjs-hooks
 
 export class SignIn extends Component {
@@ -94,21 +95,6 @@ export class SignUp extends Component {
   }
 }
 
-function UniversityListContainer(props) {
-
-}
-
-function UniversityItem(props) {
-  const { name, country, domain } = props;
-  return (
-    <div>
-      <div>{name}</div>
-      <div>{domain}</div>
-      <div>{country}</div>
-    </div>
-  );
-}
-
 const UniversityApi = {
   search(options) {
     const paramTuples = [
@@ -125,26 +111,40 @@ const UniversityApi = {
 };
 
 function getTotalPageCount(totalRecords, limit) {
-  return Math.floor(totalRecords / limit) + (totalRecords % limit === 0) ? 0 : 1;
+  return Math.floor(totalRecords / limit) + ((totalRecords % limit === 0) ? 0 : 1);
 }
 
-
 function ListingPage() {
-  const { listUni, updateListUni } = useContext(UniversityContext);
+  const { listUni, limit, offset, updateListUni, updateLimitSelection } = useContext(UniversityContext);
+  const [listUniByPage, setListUniByPage] = useState([]);
   const [keywords, setKeywords] = useState('');
   const [submitValues, setSubmitValues] = useState({ uniName: '' });
 
   function handlePageClick(data) {
-    console.log({ data });
+    updateLimitSelection({ limit: 10, offset: 10 * data.selected });
+  }
+
+  function handleSearchClick() {
+    setSubmitValues({ uniName: keywords })
   }
 
   useEffect(() => {
-    if (!submitValues.uniName) return () => {};
     const subscription = UniversityApi.search(submitValues)
-      .subscribe(data => updateListUni(data));
+      .subscribe(data => {
+        data.forEach((n, index) => {
+          n.index = index;
+        });
+        updateListUni(data);
+        updateLimitSelection({ limit: 10, offset: 0 });
+      });
 
     return () => subscription.unsubscribe();
   }, [submitValues])
+
+  useEffect(() => {
+    setListUniByPage(listUni.slice(offset, offset + limit));
+    return () => {};
+  }, [listUni, limit, offset]);
 
   return (
     <Container className="universities-listing">
@@ -161,7 +161,7 @@ function ListingPage() {
             </Form>
           </Col>
           <Col xs={2}>
-            <Button variant="outline-primary" onClick={() => setSubmitValues({ uniName: keywords })}>Search</Button>
+            <Button variant="outline-primary" onClick={handleSearchClick}>Search</Button>
           </Col>
         </Row>
       </Container>
@@ -171,13 +171,12 @@ function ListingPage() {
           <Col xs={4}>Domain</Col>
           <Col xs={4}>Country</Col>
         </Row>
-        { listUni.map((n, index) => {
+        { listUniByPage.map((n, index) => {
           const { name, country } = n;
           const domain = n.domains?.length ? n.domains[0] : undefined;
-          // return <UniversityItem key={name} name={name} domain={domain} country={country} />;
           return (
             <Row key={index}>
-              <Col xs={4}>{ name }</Col>
+              <Col xs={4}>{n.index}.{ name }</Col>
               <Col xs={4}><a href={domain}>{ domain }</a></Col>
               <Col xs={4}>{ country }</Col>
             </Row>
@@ -228,17 +227,29 @@ function NavBar() {
 
 const UniversityContext = React.createContext({
   listUni: [],
+  limit: 10,
+  offset: 0,
   updateListUni: () => {},
+  updateLimitSelection: () => {},
 });
 
 function App() {
   const [listUni, setListUni] = useState([]);
-
+  const [limitSelection, setLimitSelection] = useState({ limit: 10, offset: 0 });
   const updateListUni = (listUni) => {
     setListUni(listUni);
   };
+
+  const initUniversityValue = {
+    listUni,
+    limit: limitSelection.limit,
+    offset: limitSelection.offset,
+    updateListUni,
+    updateLimitSelection: setLimitSelection,
+  };
+
   return (
-    <UniversityContext.Provider value={{ listUni, updateListUni }}>
+    <UniversityContext.Provider value={initUniversityValue}>
       <BrowserRouter>
         <div className="App">
           <NavBar />
