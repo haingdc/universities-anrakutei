@@ -1,5 +1,11 @@
 @import url('https://fonts.googleapis.com/css?family=Fira+Sans:400,500,600,700,800');
 
+:root {
+  --ua-blue-0: #1c8ef9;
+
+  --ua-grey-0: #6c757d;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -72,6 +78,6 @@ body, html, .App, #root, .auth-wrapper {
   color: #167bff;
 }
 
-:root {
-  --ua-blue-0: #1c8ef9;
+.page-link.disabled {
+  color: var(--ua-grey-0);
 }

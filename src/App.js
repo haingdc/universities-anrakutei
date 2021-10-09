@@ -178,10 +178,13 @@ function ListingPage() {
             <Row key={index}>
               <Col xs={4}>{n.index}.{ name }</Col>
               <Col xs={4}><a href={domain}>{ domain }</a></Col>
-              <Col xs={4}>{ country }</Col>
+              <Col xs={3}>{ country }</Col>
+              <Col xs={1}>Liked</Col>
             </Row>
           )
         }) }
+      </Container>
+      <Container>
       </Container>
       <Container>
         <ReactPaginate
