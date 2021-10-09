@@ -1,19 +1,20 @@
-import { Component, useEffect, useState } from 'react';
-import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import './App.scss';
+import './containers/universities/pages/universities-listing/universities-listing.scss';
+import './containers/authenticate/pages/sign-in/sign-in.scss';
+import './containers/authenticate/pages/sign-up/sign-up.scss';
+import { Component, useEffect, useState } from 'react';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Pagination from 'react-bootstrap/Pagination';
+import ReactPaginate from 'react-paginate';
 import { BrowserRouter, Switch, Route, Link } from 'react-router-dom';
 import { ajax } from 'rxjs/ajax'
 // TODO: remove
 import { useObservable } from 'rxjs-hooks'
-import './containers/universities/pages/universities-listing/universities-listing.scss';
-import './containers/authenticate/pages/sign-in/sign-in.scss';
-import './containers/authenticate/pages/sign-up/sign-up.scss';
 // TODO: remove package: rxjs-hooks
 
 export class SignIn extends Component {
@@ -124,18 +125,8 @@ const UniversityApi = {
   }
 };
 
-function UIPagination(props) {
-  const { className = '' } = props;
-  return (
-    <Pagination className={className}>
-      <Pagination.Prev />
-      <Pagination.Item active>{1}</Pagination.Item>
-      <Pagination.Item >{2}</Pagination.Item>
-      <Pagination.Item >{3}</Pagination.Item>
-      <Pagination.Item >{4}</Pagination.Item>
-      <Pagination.Next />
-    </Pagination>
-  )
+function getTotalPageCount(totalRecords, limit) {
+  return Math.floor(totalRecords / limit) + (totalRecords % limit === 0) ? 0 : 1;
 }
 
 
@@ -143,6 +134,10 @@ function ListingPage() {
   const [data, setData] = useState([]);
   const [keywords, setKeywords] = useState('');
   const [submitValues, setSubmitValues] = useState({ uniName: '' });
+
+  function handlePageClick(data) {
+    console.log({ data });
+  }
 
   useEffect(() => {
     if (!submitValues.uniName) return () => {};
@@ -191,7 +186,22 @@ function ListingPage() {
         }) }
       </Container>
       <Container>
-        <UIPagination className="justify-content-center" />
+        <ReactPaginate
+          previousLabel={'previous'}
+          nextLabel={'next'}
+          breakLabel={'...'}
+          breakClassName={'page-link'}
+          pageCount={getTotalPageCount(data.length, 10)}
+          marginPagesDisplayed={2}
+          pageRangeDisplayed={5}
+          onPageChange={handlePageClick}
+          containerClassName={'pagination justify-content-center'}
+          activeClassName={'active'}
+          pageClassName={'page-item'}
+          pageLinkClassName={'page-link'}
+          previousClassName={'page-link'}
+          nextClassName={'page-link'}
+        />
       </Container>
     </Container>
   );
