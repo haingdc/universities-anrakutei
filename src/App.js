@@ -3,12 +3,14 @@ import './App.scss';
 import './containers/universities/pages/universities-listing/universities-listing.scss';
 import './containers/authenticate/pages/sign-in/sign-in.scss';
 import './containers/authenticate/pages/sign-up/sign-up.scss';
-import React, { Component, useContext, useEffect, useState } from 'react';
+import React, { Component, useContext, useEffect, useReducer, useState } from 'react';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import Navbar from 'react-bootstrap/Navbar';
+import Nav from 'react-bootstrap/Nav';
 import ReactPaginate from 'react-paginate';
 import { BrowserRouter, Switch, Route, Link } from 'react-router-dom';
 import { ajax } from 'rxjs/ajax'
@@ -17,9 +19,15 @@ import { useObservable } from 'rxjs-hooks'
 import { map, mergeMap } from 'rxjs/operators';
 // TODO: remove package: rxjs-hooks
 
-function SignIn() {
+function SignIn(props) {
   const [mail, setMail] = useState('');
   const [pass, setPass] = useState('');
+
+  async function handleSignin(e) {
+    e.preventDefault();
+    // let payload = { mail, pass}
+    props.history.push('/');
+  }
   return (
     <div className="sign-in">
       <div className="auth-wrapper">
@@ -53,7 +61,12 @@ function SignIn() {
               </div>
             </Form.Group> */}
 
-            <Button type="submit" variant="primary" className="btn btn-primary btn-block">Submit</Button>
+            <Button
+              type="submit"
+              variant="primary"
+              className="btn btn-primary btn-block"
+              onClick={handleSignin}
+            >Submit</Button>
             {/* <p className="forgot-password text-right">
               Forgot <a href="#">password?</a>
             </p> */}
@@ -231,23 +244,129 @@ function ListingPage() {
 
 function NavBar() {
   return (
-    <nav className="navbar navbar-expand-lg navbar-light fixed-top">
-      <div className="container">
-        <Link className="navbar-brand" to={"/"}>Home</Link>
-        <div className="collapse navbar-collapse" id="navbarTogglerDemo02">
-          <ul className="navbar-nav ml-auto">
-            <li className="nav-item">
+    <Navbar className="fixed-top" bg="light" expand="lg">
+      <Container>
+        <Navbar.Brand>
+          <Link className="navbar-brand" to={"/"}>Home</Link>
+        </Navbar.Brand>
+        <Navbar.Toggle aria-controls="basic-navbar-nav" />
+        <Navbar.Collapse id="basic-navbar-nav">
+          <Nav className="me-auto">
+            <Nav.Link href="/sign-in">
               <Link className="nav-link" to={"/sign-in"}>Login</Link>
-            </li>
-            <li className="nav-item">
+            </Nav.Link>
+            <Nav.Link href="/sign-up">
               <Link className="nav-link" to={"/sign-up"}>Sign up</Link>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </nav>
+            </Nav.Link>
+          </Nav>
+        </Navbar.Collapse>
+      </Container>
+    </Navbar>
   );
 }
+
+const AuthStateContext = React.createContext();
+const AuthDispatchContext = React.createContext();
+
+export function useAuthState() {
+  const context = React.useContext(AuthStateContext);
+  if (context === undefined) {
+    throw new Error("useAuthState must be used within a AuthProvider");
+  }
+ 
+  return context;
+}
+ 
+export function useAuthDispatch() {
+  const context = React.useContext(AuthDispatchContext);
+  if (context === undefined) {
+    throw new Error("useAuthDispatch must be used within a AuthProvider");
+  }
+ 
+  return context;
+}
+
+let user = localStorage.getItem('currentUser')
+	? JSON.parse(localStorage.getItem('currentUser')).user
+	: '';
+let token = localStorage.getItem('currentUser')
+	? JSON.parse(localStorage.getItem('currentUser')).auth_token
+	: '';
+
+export const initialState = {
+	user: '' || user,
+	token: '' || token,
+	loading: false,
+	errorMessage: null,
+};
+
+export const AuthProvider = ({ children }) => {
+  const [user, dispatch] = useReducer(AuthReducer, initialState);
+ 
+  return (
+    <AuthStateContext.Provider value={user}>
+      <AuthDispatchContext.Provider value={dispatch}>
+        {children}
+      </AuthDispatchContext.Provider>
+    </AuthStateContext.Provider>
+  );
+};
+
+function AuthReducer(initialState, action) {
+  switch(action.type) {
+    case 'request_login':
+      return {
+        ...initialState,
+        loading: true,
+      };
+    case 'login_success':
+      return {
+        ...initialState,
+        user: action.payload.user,
+        token: action.payload.auth_token,
+        loading: false,
+      };
+    default:
+      throw new Error(`Unhandled action type: ${action.type}`);
+  }
+}
+
+const ROOT_URL = 'https://secret-hamlet-03431.herokuapp.com';
+ 
+export async function loginUser(dispatch, loginPayload) {
+  const requestOptions = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(loginPayload),
+  };
+ 
+  try {
+    dispatch({ type: 'REQUEST_LOGIN' });
+    let response = await fetch(`${ROOT_URL}/login`, requestOptions);
+    let data = await response.json();
+ 
+    if (data.user) {
+      dispatch({ type: 'LOGIN_SUCCESS', payload: data });
+      localStorage.setItem('currentUser', JSON.stringify(data));
+      return data
+    }
+ 
+    dispatch({ type: 'LOGIN_ERROR', error: data.errors[0] });
+    return;
+  } catch (error) {
+    dispatch({ type: 'LOGIN_ERROR', error: error });
+  }
+}
+ 
+export async function logout(dispatch) {
+  dispatch({ type: 'LOGOUT' });
+  localStorage.removeItem('currentUser');
+  localStorage.removeItem('token');
+}
+
+const AuthenticationContext = React.createContext({
+
+});
 
 const UniversityContext = React.createContext({
   listUni: [],
@@ -273,18 +392,20 @@ function App() {
   };
 
   return (
-    <UniversityContext.Provider value={initUniversityValue}>
-      <BrowserRouter>
-        <div className="App">
-          <NavBar />
-          <Switch>
-            <Route exact path='/' component={ListingPage} />
-            <Route path="/sign-in" component={SignIn} />
-            <Route path="/sign-up" component={SignUp} />
-          </Switch>
-        </div>
-      </BrowserRouter>
-    </UniversityContext.Provider>
+    <AuthProvider>
+      <UniversityContext.Provider value={initUniversityValue}>
+        <BrowserRouter>
+          <div className="App">
+            <NavBar />
+            <Switch>
+              <Route exact path='/' component={ListingPage} />
+              <Route path="/sign-in" component={SignIn} />
+              <Route path="/sign-up" component={SignUp} />
+            </Switch>
+          </div>
+        </BrowserRouter>
+      </UniversityContext.Provider>
+  </AuthProvider>
   );
 }
 
