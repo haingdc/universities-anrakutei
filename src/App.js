@@ -23,11 +23,19 @@ function SignIn(props) {
   const [mail, setMail] = useState('');
   const [pass, setPass] = useState('');
 
+  const dispatch = useAuthDispatch();
+
   async function handleSignin(e) {
     e.preventDefault();
-    // let payload = { mail, pass}
-    props.history.push('/');
+    try {
+      let response = await loginUser(dispatch, { mail, pass })
+      if (!response.user) return;
+      props.history.push('/');
+    } catch(error) {
+      console.error({ errorSignin: error });
+    }
   }
+
   return (
     <div className="sign-in">
       <div className="auth-wrapper">
@@ -252,12 +260,8 @@ function NavBar() {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
-            <Nav.Link href="/sign-in">
-              <Link className="nav-link" to={"/sign-in"}>Login</Link>
-            </Nav.Link>
-            <Nav.Link href="/sign-up">
-              <Link className="nav-link" to={"/sign-up"}>Sign up</Link>
-            </Nav.Link>
+            <Link className="nav-link" to={"/sign-in"}>Login</Link>
+            <Link className="nav-link" to={"/sign-up"}>Sign up</Link>
           </Nav>
         </Navbar.Collapse>
       </Container>
@@ -337,27 +341,36 @@ export async function loginUser(dispatch, loginPayload) {
   const requestOptions = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(loginPayload),
+    body: JSON.stringify({ email: loginPayload.mail, password: loginPayload.pass }),
   };
- 
+
   try {
-    dispatch({ type: 'REQUEST_LOGIN' });
-    let response = await fetch(`${ROOT_URL}/login`, requestOptions);
-    let data = await response.json();
- 
+    dispatch({ type: 'request_login' });
+    // TODO: fake login
+    // let response = await fetch(`${ROOT_URL}/login`, requestOptions);
+    // let data = await response.json();
+    let response = await Promise.resolve({
+      auth_token: "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxfQ.5b0YUvXu9IFCI4kqzNAfrnuA2lSMp8XtezIZTfQYH4k",
+      user: {
+        id: 1,
+        email: 'nero@admin.com'
+      }
+    });
+    let data = response;
+
     if (data.user) {
-      dispatch({ type: 'LOGIN_SUCCESS', payload: data });
+      dispatch({ type: 'login_success', payload: data });
       localStorage.setItem('currentUser', JSON.stringify(data));
       return data
     }
- 
-    dispatch({ type: 'LOGIN_ERROR', error: data.errors[0] });
+
+    dispatch({ type: 'login_error', error: data.errors[0] });
     return;
   } catch (error) {
-    dispatch({ type: 'LOGIN_ERROR', error: error });
+    dispatch({ type: 'login_error', error: error });
   }
 }
- 
+
 export async function logout(dispatch) {
   dispatch({ type: 'LOGOUT' });
   localStorage.removeItem('currentUser');
