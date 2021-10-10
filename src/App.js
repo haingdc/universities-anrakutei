@@ -17,82 +17,103 @@ import { useObservable } from 'rxjs-hooks'
 import { map, mergeMap } from 'rxjs/operators';
 // TODO: remove package: rxjs-hooks
 
-export class SignIn extends Component {
-  render() {
-    return (
-      <div className="sign-in">
-        <div className="auth-wrapper">
-          <div className="auth-inner">
-            <Form>
-              <h3>Sign In</h3>
+function SignIn() {
+  const [mail, setMail] = useState('');
+  const [pass, setPass] = useState('');
+  return (
+    <div className="sign-in">
+      <div className="auth-wrapper">
+        <div className="auth-inner">
+          <Form>
+            <h3>Sign In</h3>
 
-              <Form.Group className="mb-3" controlId="email">
-                <Form.Label>Email address</Form.Label>
-                <Form.Control type="email" className="form-control" placeholder="Enter email"></Form.Control>
-              </Form.Group>
+            <Form.Group className="mb-3" controlId="email">
+              <Form.Label>Email address</Form.Label>
+              <Form.Control
+                type="email"
+                placeholder="Enter email"
+                value={mail}
+                onChange={ev => setMail(ev.target.value)}
+              ></Form.Control>
+            </Form.Group>
 
-              <Form.Group className="mb-3" controlId="password">
-                <Form.Label>Password</Form.Label>
-                <Form.Control type="password" className="form-control" placeholder="Enter password"></Form.Control>
-              </Form.Group>
+            <Form.Group className="mb-3" controlId="password">
+              <Form.Label>Password</Form.Label>
+              <Form.Control
+                type="password"
+                placeholder="Enter password"
+                value={pass}
+                onChange={ev => setPass(ev.target.value)}
+              ></Form.Control>
+            </Form.Group>
 
-              <Form.Group className="mb-3" controlId="remember">
-                <div className="custom-control custom-checkbox">
-                  <Form.Check inline label="Remember me" type="checkbox" className="custom-control-input" id="customCheck1"></Form.Check>
-                </div>
-              </Form.Group>
+            {/* <Form.Group className="mb-3" controlId="remember">
+              <div className="custom-control custom-checkbox">
+                <Form.Check inline label="Remember me" type="checkbox" className="custom-control-input" id="customCheck1"></Form.Check>
+              </div>
+            </Form.Group> */}
 
-              <Button type="submit" variant="primary" className="btn btn-primary btn-block">Submit</Button>
-              <p className="forgot-password text-right">
-                Forgot <a href="#">password?</a>
-              </p>
-            </Form>
-          </div>
+            <Button type="submit" variant="primary" className="btn btn-primary btn-block">Submit</Button>
+            {/* <p className="forgot-password text-right">
+              Forgot <a href="#">password?</a>
+            </p> */}
+          </Form>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 }
 
-export class SignUp extends Component {
-  render() {
-    return (
-      <div className="sign-in">
-        <div className="auth-wrapper">
-          <div className="auth-inner">
-            <Form>
-              <h3>Sign Up</h3>
+function SignUp() {
+  const [name, setName] = useState('');
+  const [mail, setMail] = useState('');
+  const [pass, setPass] = useState('');
+  return (
+    <div className="sign-in">
+      <div className="auth-wrapper">
+        <div className="auth-inner">
+          <Form>
+            <h3>Sign Up</h3>
 
-              <Form.Group className="mb-3">
-                <Form.Label>First name</Form.Label>
-                <Form.Control type="text" className="form-control" placeholder="First name"></Form.Control>
-              </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Full name</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Full name"
+                value={name}
+                onChange={ev => setName(ev.target.value)}
+              ></Form.Control>
+            </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Last name</Form.Label>
-                <Form.Control type="text" className="form-control" placeholder="Last name"></Form.Control>
-              </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Email address</Form.Label>
+              <Form.Control
+                type="email"
+                placeholder="Enter email"
+                value={mail}
+                onChange={ev => setMail(ev.target.value)}
+              ></Form.Control>
+            </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Email address</Form.Label>
-                <Form.Control type="email" className="form-control" placeholder="Enter email"></Form.Control>
-              </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Password</Form.Label>
+              <Form.Control
+                type="password"
+                placeholder="Enter password"
+                value={pass}
+                onChange={ev => setPass(ev.target.value)}
+              ></Form.Control>
+            </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Password</Form.Label>
-                <Form.Control type="password" className="form-control" placeholder="Enter password"></Form.Control>
-              </Form.Group>
-
-              <Button type="submit" variant="primary" className="btn btn-primary btn-block">Sign Up</Button>
-              <p className="forgot-password text-right">
-                Already registered <a href="#">sign in?</a>
-              </p>
-            </Form>
-          </div>
+            <Button type="submit" variant="primary" className="btn btn-primary btn-block">Sign Up</Button>
+            <p className="forgot-password text-right">
+              Already registered <Link className="" to={"/sign-in"}>sign in?</Link>
+            </p>
+          </Form>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 }
 
 const UniversityApi = {
