@@ -28,7 +28,7 @@ function SignIn(props) {
   async function handleSignin(e) {
     e.preventDefault();
     try {
-      let response = await loginUser(dispatch, { mail, pass })
+      let response = await signinUser(dispatch, { mail, pass })
       if (!response.user) return;
       props.history.push('/');
     } catch(error) {
@@ -85,10 +85,24 @@ function SignIn(props) {
   );
 }
 
-function SignUp() {
+function SignUp(props) {
   const [name, setName] = useState('');
   const [mail, setMail] = useState('');
   const [pass, setPass] = useState('');
+
+  const dispatch = useSignupDispatch();
+
+  async function handleSignup(e) {
+    e.preventDefault();
+    try {
+      let response = await signupUser(dispatch, { name, mail, pass })
+      if (!response.user) return;
+      props.history.push('/sign-in');
+    } catch(error) {
+      console.error({ errorSignin: error });
+    }
+  }
+
   return (
     <div className="sign-in">
       <div className="auth-wrapper">
@@ -126,7 +140,12 @@ function SignUp() {
               ></Form.Control>
             </Form.Group>
 
-            <Button type="submit" variant="primary" className="btn btn-primary btn-block">Sign Up</Button>
+            <Button
+              type="submit"
+              variant="primary"
+              className="btn btn-primary btn-block"
+              onClick={handleSignup}
+            >Sign Up</Button>
             <p className="forgot-password text-right">
               Already registered <Link className="" to={"/sign-in"}>sign in?</Link>
             </p>
@@ -236,7 +255,7 @@ function ListingPage() {
           breakClassName={'page-link'}
           pageCount={getTotalPageCount(listUni.length, 10)}
           marginPagesDisplayed={2}
-          pageRangeDisplayed={5}
+          pageRangeDisplayed={1}
           onPageChange={handlePageClick}
           containerClassName={'pagination justify-content-center'}
           activeClassName={'active'}
@@ -280,13 +299,13 @@ export function useAuthState() {
  
   return context;
 }
- 
+
 export function useAuthDispatch() {
   const context = React.useContext(AuthDispatchContext);
   if (context === undefined) {
     throw new Error("useAuthDispatch must be used within a AuthProvider");
   }
- 
+
   return context;
 }
 
@@ -330,14 +349,122 @@ function AuthReducer(initialState, action) {
         token: action.payload.auth_token,
         loading: false,
       };
+    case 'login_error':
+      return {
+        ...initialState,
+        user: null,
+        loading: false,
+      };
+    default:
+      throw new Error(`Unhandled action type: ${action.type}`);
+  }
+}
+
+const SignupStateContext = React.createContext();
+const SignupDispatchContext = React.createContext();
+
+export function useSignupState() {
+  const context = React.useContext(SignupStateContext);
+  if (context === undefined) {
+    throw new Error("useSignupState must be used within a SignupProvider");
+  }
+ 
+  return context;
+}
+
+export function useSignupDispatch() {
+  const context = React.useContext(SignupDispatchContext);
+  if (context === undefined) {
+    throw new Error("useSignupDispatch must be used within a SignupProvider");
+  }
+
+  return context;
+}
+
+export const initialStateSignup = {
+  user: null,
+  loading: false,
+  errorMessage: null,
+};
+
+export const SignupProvider = ({ children }) => {
+  const [user, dispatch] = useReducer(SignupReducer, initialState);
+
+  return (
+    <SignupStateContext.Provider value={user}>
+      <SignupDispatchContext.Provider value={dispatch}>
+        {children}
+      </SignupDispatchContext.Provider>
+    </SignupStateContext.Provider>
+  );
+};
+
+function SignupReducer(initialState, action) {
+  switch(action.type) {
+    case 'request_register':
+      return {
+        ...initialState,
+        user: null,
+        loading: true,
+        errorMessage: null
+      };
+    case 'register_success':
+      return {
+        ...initialState,
+        user: action.payload.user,
+        loading: false,
+        errorMessage: null
+      };
+    case 'register_error':
+      return {
+        ...initialState,
+        user: null,
+        loading: false,
+        errorMessage: action.payload.error
+      };
     default:
       throw new Error(`Unhandled action type: ${action.type}`);
   }
 }
 
 const ROOT_URL = 'https://secret-hamlet-03431.herokuapp.com';
- 
-export async function loginUser(dispatch, loginPayload) {
+
+export async function signupUser(dispatch, registerPayload) {
+  const requestOptions = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: registerPayload.name, email: registerPayload.mail, password: registerPayload.pass }),
+  };
+
+  try {
+    dispatch({ type: 'request_register' });
+    let response = await new Promise((resolve) => {
+      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || "[]");
+      const user = registeredUsers.filter(n => n.mail === registerPayload.mail)[0];
+      if (user) {
+        resolve({ user: null, errors: ['email is exist'] });
+      } else {
+        resolve({ user: registerPayload, errors: [] });
+      }
+    });
+    let data = response;
+
+    if (!data.errors.length) {
+      dispatch({ type: 'register_success', payload: data.user });
+      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || "[]");
+      registeredUsers.push(data.user);
+      localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+      return data;
+    }
+
+    dispatch({ type: 'register_error', payload: { error: data.errors[0] } });
+    return { user: null };
+  } catch (error) {
+    dispatch({ type: 'login_error', error: error });
+  }
+}
+
+export async function signinUser(dispatch, loginPayload) {
   const requestOptions = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -349,11 +476,13 @@ export async function loginUser(dispatch, loginPayload) {
     // TODO: fake login
     // let response = await fetch(`${ROOT_URL}/login`, requestOptions);
     // let data = await response.json();
-    let response = await Promise.resolve({
-      auth_token: "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxfQ.5b0YUvXu9IFCI4kqzNAfrnuA2lSMp8XtezIZTfQYH4k",
-      user: {
-        id: 1,
-        email: 'nero@admin.com'
+    let response = await new Promise((resolve) => {
+      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || "[]");
+      const user = registeredUsers.filter(n => n.mail === loginPayload.mail && n.pass === loginPayload.pass)[0];
+      if (!user) {
+        resolve({ user: null, errors: ['user is not exist'] });
+      } else {
+        resolve({ user, errors: [] });
       }
     });
     let data = response;
@@ -376,10 +505,6 @@ export async function logout(dispatch) {
   localStorage.removeItem('currentUser');
   localStorage.removeItem('token');
 }
-
-const AuthenticationContext = React.createContext({
-
-});
 
 const UniversityContext = React.createContext({
   listUni: [],
@@ -406,18 +531,20 @@ function App() {
 
   return (
     <AuthProvider>
-      <UniversityContext.Provider value={initUniversityValue}>
-        <BrowserRouter>
-          <div className="App">
-            <NavBar />
-            <Switch>
-              <Route exact path='/' component={ListingPage} />
-              <Route path="/sign-in" component={SignIn} />
-              <Route path="/sign-up" component={SignUp} />
-            </Switch>
-          </div>
-        </BrowserRouter>
-      </UniversityContext.Provider>
+      <SignupProvider>
+        <UniversityContext.Provider value={initUniversityValue}>
+          <BrowserRouter>
+            <div className="App">
+              <NavBar />
+              <Switch>
+                <Route exact path='/' component={ListingPage} />
+                <Route path="/sign-in" component={SignIn} />
+                <Route path="/sign-up" component={SignUp} />
+              </Switch>
+            </div>
+          </BrowserRouter>
+        </UniversityContext.Provider>
+      </SignupProvider>
   </AuthProvider>
   );
 }
