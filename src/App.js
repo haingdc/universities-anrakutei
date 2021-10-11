@@ -179,11 +179,11 @@ function getTotalPageCount(totalRecords, limit) {
 }
 
 function LikeButton(props) {
-  const { liked, value, onClick = (_uniId) => {} } = props;
+  const { value, name, onClick = (_uniId) => {} } = props;
   return (
     <FontAwesomeIcon
-      icon={liked ? fasHeart : farHeart}
-      onClick={() => onClick(value)}
+      icon={value === true ? fasHeart : farHeart}
+      onClick={() => onClick({ name, value: !value })}
     />
   );
 }
@@ -204,15 +204,18 @@ function ListingPage(props) {
     setSubmitValues({ uniName: keywords })
   }
 
-  async function handleLikeClick(uniId) {
+  async function handleLikeClick({ name: uniId, value: liked }) {
     if (authContext.user) {
-      const nextListUniByPage = listUniByPage.map(uni => {
-        return {
-          ...uni,
-          liked: uni.id === uniId ? !uni.liked : uni.liked
-        };
-      })
-      setListUniByPage(nextListUniByPage);
+      const uni = { ...listUniByPage.find(u => u.id === uniId) };
+      delete uni.liked;
+      if (liked) {
+        listLikedUniByUser.set(uniId, uni)
+      } else {
+        listLikedUniByUser.delete(uniId)
+      }
+      const nextListLikedUni = new Map(listLikedUniByUser);
+      setListLikedUniByUser(nextListLikedUni);
+      await updateLikedUniversitiesByUser({ mail: authContext.user.mail, likedUniversities: nextListLikedUni });
     } else {
       props.history.push('/sign-in');
     }
@@ -240,7 +243,7 @@ function ListingPage(props) {
       } else {
         uni.liked = false;
       }
-      return uni;
+      return {...uni};
     });
     setListUniByPage(nextListUniByPage);
     return () => {};
@@ -248,12 +251,14 @@ function ListingPage(props) {
 
   useEffect(() => {
     async function fetchData() {
-      const likedUniversities = await loadLikedUnivesitiesByUser({ mail: user.mail});
-      if (likedUniversities) {
-        setListLikedUniByUser(likedUniversities);
+      const data = await loadLikedUnivesitiesByUser({ mail: authContext.user.mail});
+      if (data?.likedUniversities) {
+        setListLikedUniByUser(data.likedUniversities);
       }
     }
-    fetchData();
+    if (authContext.user) {
+      fetchData();
+    }
   }, [authContext.user]);
 
   return (
@@ -291,7 +296,7 @@ function ListingPage(props) {
               <Col xs={4}><a href={domain}>{ domain }</a></Col>
               <Col xs={3}>{ country }</Col>
               <Col xs={1}>
-                <LikeButton value={id} liked={liked} onClick={handleLikeClick} />
+                <LikeButton name={id} value={liked} onClick={handleLikeClick} />
               </Col>
             </Row>
           )
@@ -490,7 +495,7 @@ export async function signupUser(dispatch, registerPayload) {
   try {
     dispatch({ type: 'request_register' });
     let response = await new Promise((resolve) => {
-      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || "[]");
+      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || "[]", reviver);
       const user = registeredUsers.filter(n => n.mail === registerPayload.mail)[0];
       if (user) {
         resolve({ user: null, errors: ['email is exist'] });
@@ -502,9 +507,9 @@ export async function signupUser(dispatch, registerPayload) {
 
     if (!data.errors.length) {
       dispatch({ type: 'register_success', payload: data.user });
-      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || "[]");
+      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || "[]", reviver);
       registeredUsers.push(data.user);
-      localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+      localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers, replacer));
       return data;
     }
 
@@ -528,7 +533,7 @@ export async function signinUser(dispatch, loginPayload) {
     // let response = await fetch(`${ROOT_URL}/login`, requestOptions);
     // let data = await response.json();
     let response = await new Promise((resolve) => {
-      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || "[]");
+      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || "[]", reviver);
       const user = registeredUsers.filter(n => n.mail === loginPayload.mail && n.pass === loginPayload.pass)[0];
       if (!user) {
         resolve({ user: null, errors: ['user is not exist'] });
@@ -540,7 +545,9 @@ export async function signinUser(dispatch, loginPayload) {
 
     if (data.user) {
       dispatch({ type: 'login_success', payload: data });
-      localStorage.setItem('currentUser', JSON.stringify(data));
+      const currentUser = { user: { ...data.user } };
+      delete currentUser.user.likedUniversities;
+      localStorage.setItem('currentUser', JSON.stringify(currentUser, replacer));
       return data
     }
 
@@ -561,18 +568,41 @@ export async function loadLikedUnivesitiesByUser(userPayload) {
   const { mail } = userPayload;
   try {
     let response = await new Promise((resolve) => {
-      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || "[]");
-      const [user] = registeredUsers.filter(n => n.email === mail);
+      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || "[]", reviver);
+      const [user] = registeredUsers.filter(n => n.mail === mail);
       if (!user) {
-        resolve({ likedUniversities: null, errors: ['user is not exist'] });
+        resolve({ likedUniversities: null, errors: ['can not load liked universities because user is not exist'] });
+      } else {
+        resolve({ likedUniversities: user.likedUniversities, errors: [] });
       }
-      resolve({ likedUniversities: user.likedUniversities || [], errors: [] });
     });
     let data = response;
-    if (data.likedUniversities) {
+    if (!data.errors.length) {
       return data;
     }
   } catch(error) {
+  }
+}
+
+export async function updateLikedUniversitiesByUser(userPayload) {
+  const { mail, likedUniversities } = userPayload;
+  try {
+    let response = await new Promise((resolve) => {
+      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || "[]", reviver);
+      const [user] = registeredUsers.filter(n => n.mail === mail);
+      if (!user) {
+        resolve({ likedUniversities: null, errors: ['can not update liked universities because user is not exist'] });
+      } else {
+        user.likedUniversities = likedUniversities;
+        localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers, replacer));
+        resolve({ likedUniversities, errors: [] });
+      }
+    });
+    let data = response;
+    if (!data.errors.length) {
+      return data;
+    }
+  } catch(err) {
   }
 }
 
