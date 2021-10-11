@@ -18,6 +18,9 @@ import { ajax } from 'rxjs/ajax'
 import { useObservable } from 'rxjs-hooks'
 import { map, mergeMap } from 'rxjs/operators';
 // TODO: remove package: rxjs-hooks
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faHeart as fasHeart } from '@fortawesome/free-solid-svg-icons'
+import { faHeart as farHeart } from '@fortawesome/free-regular-svg-icons';
 
 function SignIn(props) {
   const [mail, setMail] = useState('');
@@ -175,9 +178,21 @@ function getTotalPageCount(totalRecords, limit) {
   return Math.floor(totalRecords / limit) + ((totalRecords % limit === 0) ? 0 : 1);
 }
 
-function ListingPage() {
+function LikeButton(props) {
+  const { liked, value, onClick = (_uniId) => {} } = props;
+  return (
+    <FontAwesomeIcon
+      icon={liked ? fasHeart : farHeart}
+      onClick={() => onClick(value)}
+    />
+  );
+}
+
+function ListingPage(props) {
+  const authContext = useAuthState();
   const { listUni, limit, offset, updateListUni, updateLimitSelection } = useContext(UniversityContext);
   const [listUniByPage, setListUniByPage] = useState([]);
+  const [listLikedUniByUser, setListLikedUniByUser] = useState(new Map());
   const [keywords, setKeywords] = useState('');
   const [submitValues, setSubmitValues] = useState({ uniName: '' });
 
@@ -189,10 +204,25 @@ function ListingPage() {
     setSubmitValues({ uniName: keywords })
   }
 
+  async function handleLikeClick(uniId) {
+    if (authContext.user) {
+      const nextListUniByPage = listUniByPage.map(uni => {
+        return {
+          ...uni,
+          liked: uni.id === uniId ? !uni.liked : uni.liked
+        };
+      })
+      setListUniByPage(nextListUniByPage);
+    } else {
+      props.history.push('/sign-in');
+    }
+  }
+
   useEffect(() => {
     const subscription = UniversityApi.search(submitValues)
       .subscribe(data => {
         data.forEach((n, index) => {
+          n.id = [n.name, n.domains, n.country].join('');
           n.index = index;
         });
         updateListUni(data);
@@ -203,9 +233,28 @@ function ListingPage() {
   }, [submitValues])
 
   useEffect(() => {
-    setListUniByPage(listUni.slice(offset, offset + limit));
+    let nextListUniByPage = listUni.slice(offset, offset + limit);
+    nextListUniByPage = nextListUniByPage.map(uni => {
+      if (listLikedUniByUser.has(uni.id)) {
+        uni.liked = true;
+      } else {
+        uni.liked = false;
+      }
+      return uni;
+    });
+    setListUniByPage(nextListUniByPage);
     return () => {};
-  }, [listUni, limit, offset]);
+  }, [listUni, limit, offset, listLikedUniByUser]);
+
+  useEffect(() => {
+    async function fetchData() {
+      const likedUniversities = await loadLikedUnivesitiesByUser({ mail: user.mail});
+      if (likedUniversities) {
+        setListLikedUniByUser(likedUniversities);
+      }
+    }
+    fetchData();
+  }, [authContext.user]);
 
   return (
     <Container className="universities-listing">
@@ -230,22 +279,23 @@ function ListingPage() {
         <Row>
           <Col xs={4}>School Name</Col>
           <Col xs={4}>Domain</Col>
-          <Col xs={4}>Country</Col>
+          <Col xs={3}>Country</Col>
+          <Col xs={1}></Col>
         </Row>
         { listUniByPage.map((n, index) => {
-          const { name, country } = n;
+          const { id, name, country, liked = false } = n;
           const domain = n.domains?.length ? n.domains[0] : undefined;
           return (
-            <Row key={index}>
+            <Row key={id}>
               <Col xs={4}>{n.index}.{ name }</Col>
               <Col xs={4}><a href={domain}>{ domain }</a></Col>
               <Col xs={3}>{ country }</Col>
-              <Col xs={1}>Liked</Col>
+              <Col xs={1}>
+                <LikeButton value={id} liked={liked} onClick={handleLikeClick} />
+              </Col>
             </Row>
           )
         }) }
-      </Container>
-      <Container>
       </Container>
       <Container>
         <ReactPaginate
@@ -427,6 +477,7 @@ function SignupReducer(initialState, action) {
   }
 }
 
+// TODO: remove
 const ROOT_URL = 'https://secret-hamlet-03431.herokuapp.com';
 
 export async function signupUser(dispatch, registerPayload) {
@@ -500,10 +551,29 @@ export async function signinUser(dispatch, loginPayload) {
   }
 }
 
-export async function logout(dispatch) {
+export async function signoutUser(dispatch) {
   dispatch({ type: 'LOGOUT' });
   localStorage.removeItem('currentUser');
   localStorage.removeItem('token');
+}
+
+export async function loadLikedUnivesitiesByUser(userPayload) {
+  const { mail } = userPayload;
+  try {
+    let response = await new Promise((resolve) => {
+      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || "[]");
+      const [user] = registeredUsers.filter(n => n.email === mail);
+      if (!user) {
+        resolve({ likedUniversities: null, errors: ['user is not exist'] });
+      }
+      resolve({ likedUniversities: user.likedUniversities || [], errors: [] });
+    });
+    let data = response;
+    if (data.likedUniversities) {
+      return data;
+    }
+  } catch(error) {
+  }
 }
 
 const UniversityContext = React.createContext({
@@ -550,3 +620,24 @@ function App() {
 }
 
 export default App;
+
+
+function replacer(key, value) {
+  if(value instanceof Map) {
+    return {
+      dataType: 'Map',
+      value: Array.from(value.entries()), // or with spread: value: [...value]
+    };
+  } else {
+    return value;
+  }
+}
+
+function reviver(key, value) {
+  if(typeof value === 'object' && value !== null) {
+    if (value.dataType === 'Map') {
+      return new Map(value.value);
+    }
+  }
+  return value;
+}
