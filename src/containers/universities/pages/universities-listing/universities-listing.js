@@ -12,6 +12,8 @@ import { getTotalPageCount } from "../../../../utils";
 import { UniversityApi } from "../../../../app-api";
 import { useAuthState } from "../../../../contexts/auth-context";
 import './universities-listing.scss';
+import { UniversityItem } from '../../../../components/university-item/university-item';
+import { UniversityRowItem } from '../../../../components/university-row-item/university-row-item';
 
 export function ListingPage(props) {
   const isXS = useMediaQuery({ query: '(max-width: 575px)' });
@@ -91,7 +93,7 @@ export function ListingPage(props) {
     <Container className="universities-listing">
       <Container className="universities-listing__searchbar">
         <Row className="justify-content-center">
-          <Col xs={12} md={8} lg={6}>
+          <Col xs={11} md={8} lg={6}>
             <Form.Group className="input-group mt-3 mb-3">
               <Form.Control
                 type="text"
@@ -106,26 +108,44 @@ export function ListingPage(props) {
         </Row>
       </Container>
       <Container className="universities-listing__list">
-        <Row>
-          <Col xs={4}>School Name</Col>
-          <Col xs={4}>Domain</Col>
-          <Col xs={3}>Country</Col>
-          <Col xs={1}></Col>
-        </Row>
-        {listUniByPage.map((n) => {
-          const { id, name, country, liked = false } = n;
+        {isXS ? listUniByPage.map(n => {
+          const { id, index, name, country, liked = false } = n;
           const domain = n.domains?.length ? n.domains[0] : undefined;
           return (
-            <Row key={id}>
-              <Col xs={4} className="text-start">{n.index}.{name}</Col>
-              <Col xs={4}><a href={domain}>{domain}</a></Col>
-              <Col xs={3}>{country}</Col>
-              <Col xs={1}>
-                <LikeButton name={id} value={liked} onClick={handleLikeClick} />
-              </Col>
-            </Row>
+            <UniversityItem
+              country={country}
+              domain={domain}
+              index={index}
+              key={id}
+              name={name}
+              LikeButton={<LikeButton name={id} value={liked} onClick={handleLikeClick} />}
+            />
           );
-        })}
+        }) : null}
+        {!isXS ? (
+          <>
+            <Row>
+              <Col xs={4}>School Name</Col>
+              <Col xs={4}>Domain</Col>
+              <Col xs={3}>Country</Col>
+              <Col xs={1}></Col>
+            </Row>
+            {listUniByPage.map((n) => {
+              const { id, index, name, country, liked = false } = n;
+              const domain = n.domains?.length ? n.domains[0] : undefined;
+              return (
+                <UniversityRowItem
+                  country={country}
+                  domain={domain}
+                  index={index}
+                  key={id}
+                  name={name}
+                  LikeButton={<LikeButton name={id} value={liked} onClick={handleLikeClick} />}
+                />
+              );
+            })}
+          </>
+        ) : null}
       </Container>
       {listUniByPage.length ? (
         <Container className="universities-listing__pagination">

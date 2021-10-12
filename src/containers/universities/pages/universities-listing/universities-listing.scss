@@ -1,6 +1,25 @@
 .universities-listing {
   margin-top: 72px;
+  background-color: rgba(148, 141, 141, 0.361);
+  // background-color: var(--ua-grey-0);
+  --bs-gutter-x: 0;
+
+  @media (min-width: 576px) {
+    --bs-gutter-x: .75rem;
+    background-color: var(--ua-white-0);
+  }
+
+  &__searchbar {
+    background-color: var(--ua-white-0);
+  }
+
   &__pagination {
     margin-top: 10px;
+    background-color: var(--ua-white-0);
+    padding: 24px 0;
+  }
+
+  .ua-university-item {
+    margin-top: 5px;
   }
 }
