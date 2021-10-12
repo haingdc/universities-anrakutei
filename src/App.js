@@ -3,7 +3,7 @@ import './App.scss';
 import './containers/universities/pages/universities-listing/universities-listing.scss';
 import './containers/authenticate/pages/sign-in/sign-in.scss';
 import './containers/authenticate/pages/sign-up/sign-up.scss';
-import React, { Component, useContext, useEffect, useReducer, useState } from 'react';
+import React, { useContext, useEffect, useReducer, useState } from 'react';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
@@ -14,10 +14,6 @@ import Nav from 'react-bootstrap/Nav';
 import ReactPaginate from 'react-paginate';
 import { BrowserRouter, Switch, Route, Link } from 'react-router-dom';
 import { ajax } from 'rxjs/ajax'
-// TODO: remove
-import { useObservable } from 'rxjs-hooks'
-import { map, mergeMap } from 'rxjs/operators';
-// TODO: remove package: rxjs-hooks
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faHeart as fasHeart } from '@fortawesome/free-solid-svg-icons'
 import { faHeart as farHeart } from '@fortawesome/free-regular-svg-icons';
@@ -51,6 +47,7 @@ function SignIn(props) {
               <Form.Control
                 type="email"
                 placeholder="Enter email"
+                className="sign-in__input"
                 value={mail}
                 onChange={ev => setMail(ev.target.value)}
               ></Form.Control>
@@ -61,6 +58,7 @@ function SignIn(props) {
               <Form.Control
                 type="password"
                 placeholder="Enter password"
+                className="sign-in__input"
                 value={pass}
                 onChange={ev => setPass(ev.target.value)}
               ></Form.Control>
@@ -107,7 +105,7 @@ function SignUp(props) {
   }
 
   return (
-    <div className="sign-in">
+    <div className="sign-up">
       <div className="auth-wrapper">
         <div className="auth-inner">
           <Form>
@@ -118,6 +116,7 @@ function SignUp(props) {
               <Form.Control
                 type="text"
                 placeholder="Full name"
+                className="sign-up__input"
                 value={name}
                 onChange={ev => setName(ev.target.value)}
               ></Form.Control>
@@ -128,6 +127,7 @@ function SignUp(props) {
               <Form.Control
                 type="email"
                 placeholder="Enter email"
+                className="sign-up__input"
                 value={mail}
                 onChange={ev => setMail(ev.target.value)}
               ></Form.Control>
@@ -137,6 +137,7 @@ function SignUp(props) {
               <Form.Label>Password</Form.Label>
               <Form.Control
                 type="password"
+                className="sign-up__input"
                 placeholder="Enter password"
                 value={pass}
                 onChange={ev => setPass(ev.target.value)}

@@ -1,4 +1,19 @@
 .sign-in {
   background-color: var(--ua-blue-0);
   height: 100%;
+  @media (min-width: 576px) {
+    width: 100%;
+  }
+
+  &__input {
+    width: 18rem;
+  }
+
+  .auth-inner {
+    padding: 30px;
+
+    @media (min-width: 576px) {
+      padding: 40px 55px 45px 55px;
+    }
+  }
 }
