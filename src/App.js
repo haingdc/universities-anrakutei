@@ -17,6 +17,7 @@ import { ajax } from 'rxjs/ajax'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faHeart as fasHeart } from '@fortawesome/free-solid-svg-icons'
 import { faHeart as farHeart } from '@fortawesome/free-regular-svg-icons';
+import { useMediaQuery } from 'react-responsive'
 
 function SignIn(props) {
   const [mail, setMail] = useState('');
@@ -190,6 +191,7 @@ function LikeButton(props) {
 }
 
 function ListingPage(props) {
+  const isXS = useMediaQuery({ query: '(max-width: 575px)' })
   const authContext = useAuthState();
   const { listUni, limit, offset, updateListUni, updateLimitSelection } = useContext(UniversityContext);
   const [listUniByPage, setListUniByPage] = useState([]);
@@ -266,7 +268,7 @@ function ListingPage(props) {
     <Container className="universities-listing">
       <Container className="universities-listing__searchbar">
         <Row className="justify-content-center">
-          <Col xs={8}>
+          <Col xs={12} md={8} lg={6}>
             <Form.Group className="input-group mt-3 mb-3">
               <Form.Control
                 type="text"
@@ -293,7 +295,7 @@ function ListingPage(props) {
           const domain = n.domains?.length ? n.domains[0] : undefined;
           return (
             <Row key={id}>
-              <Col xs={4}>{n.index}.{ name }</Col>
+              <Col xs={4} className="text-start">{n.index}.{ name }</Col>
               <Col xs={4}><a href={domain}>{ domain }</a></Col>
               <Col xs={3}>{ country }</Col>
               <Col xs={1}>
@@ -303,24 +305,26 @@ function ListingPage(props) {
           )
         }) }
       </Container>
-      <Container>
-        <ReactPaginate
-          previousLabel={'previous'}
-          nextLabel={'next'}
-          breakLabel={'...'}
-          breakClassName={'page-link'}
-          pageCount={getTotalPageCount(listUni.length, 10)}
-          marginPagesDisplayed={2}
-          pageRangeDisplayed={1}
-          onPageChange={handlePageClick}
-          containerClassName={'pagination justify-content-center'}
-          activeClassName={'active'}
-          pageClassName={'page-item'}
-          pageLinkClassName={'page-link'}
-          previousClassName={'page-link'}
-          nextClassName={'page-link'}
-        />
-      </Container>
+      {listUniByPage.length ? (
+        <Container className="universities-listing__pagination">
+          <ReactPaginate
+            previousLabel={isXS ? '<' : 'previous'}
+            nextLabel={isXS ? '>' : 'next'}
+            breakLabel={'...'}
+            breakClassName={'page-link'}
+            pageCount={getTotalPageCount(listUni.length, 10)}
+            marginPagesDisplayed={2}
+            pageRangeDisplayed={isXS ? 1 : 5}
+            onPageChange={handlePageClick}
+            containerClassName={'pagination justify-content-center'}
+            activeClassName={'active'}
+            pageClassName={'page-item'}
+            pageLinkClassName={'page-link'}
+            previousClassName={'page-link'}
+            nextClassName={'page-link'}
+          />
+        </Container>
+      ) : null}
     </Container>
   );
 }
