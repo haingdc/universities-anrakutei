@@ -112,7 +112,7 @@ export function ListingPage(props) {
           <Col xs={3}>Country</Col>
           <Col xs={1}></Col>
         </Row>
-        {listUniByPage.map((n, index) => {
+        {listUniByPage.map((n) => {
           const { id, name, country, liked = false } = n;
           const domain = n.domains?.length ? n.domains[0] : undefined;
           return (

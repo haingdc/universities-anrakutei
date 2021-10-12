@@ -1,7 +1,12 @@
-# Getting Started with Create React App
+# Getting Started with Universities Anrakutei App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Description
+This web application shows a list of universities from all over the world use https://github.com/Hipo/university-domains-list. It allows us to search for university by name
+
+How its works? the following features such as sign-in, sign-up, like any university of each user are run by store data to localstorage.
+For simplicity, to sign-in to other account, we don't need sign-out, just open sign-in screen at fill the info. That's all.
 ## Available Scripts
 
 In the project directory, you can run:
