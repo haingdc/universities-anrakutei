@@ -1,0 +1,23 @@
+export function replacer(key, value) {
+  if (value instanceof Map) {
+    return {
+      dataType: 'Map',
+      value: Array.from(value.entries()), // or with spread: value: [...value]
+    };
+  } else {
+    return value;
+  }
+}
+
+export function reviver(key, value) {
+  if (typeof value === 'object' && value !== null) {
+    if (value.dataType === 'Map') {
+      return new Map(value.value);
+    }
+  }
+  return value;
+}
+
+export function getTotalPageCount(totalRecords, limit) {
+  return Math.floor(totalRecords / limit) + ((totalRecords % limit === 0) ? 0 : 1);
+}
