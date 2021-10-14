@@ -14,11 +14,15 @@ import { useAuthState } from "../../../../contexts/auth-context";
 import './universities-listing.scss';
 import { UniversityItem } from '../../../../components/university-item/university-item';
 import { UniversityRowItem } from '../../../../components/university-row-item/university-row-item';
+import useDidUpdateEffect from '../../../../hooks/useDidUpdateEffect';
 
 export function ListingPage(props) {
   const isXS = useMediaQuery({ query: '(max-width: 575px)' });
   const authContext = useAuthState();
-  const { listUni, limit, offset, updateListUni, updateLimitSelection } = useContext(UniversityContext);
+  const {
+    listUni, limit, offset, totalRecordCount,
+    updateListUni, updateLimitSelection, updateTotalRecordCount
+  } = useContext(UniversityContext);
   const [listUniByPage, setListUniByPage] = useState([]);
   const [listLikedUniByUser, setListLikedUniByUser] = useState(new Map());
   const [keywords, setKeywords] = useState('');
@@ -49,22 +53,39 @@ export function ListingPage(props) {
     }
   }
 
-  useEffect(() => {
-    const subscription = UniversityApi.search(submitValues)
+  useEffect(function searchEffect() {
+    const subscription = UniversityApi.search({ ...submitValues, offset, limit })
       .subscribe(data => {
-        data.forEach((n, index) => {
+        const { list, pageResponseInformation: { totalRecordCount } } = data;
+        let index = offset;
+        list.forEach((n) => {
           n.id = [n.name, n.domains, n.country].join('');
-          n.index = index;
+          n.index = ++index;
         });
-        updateListUni(data);
-        updateLimitSelection({ limit: 10, offset: 0 });
-      });
 
+        updateListUni(list);
+        updateLimitSelection({ limit: 10, offset: 0 });
+        updateTotalRecordCount(totalRecordCount);
+      });
     return () => subscription.unsubscribe();
   }, [submitValues]);
 
-  useEffect(() => {
-    let nextListUniByPage = listUni.slice(offset, offset + limit);
+  useDidUpdateEffect(function paginateEffect() {
+    const subscription = UniversityApi.search({ ...submitValues, offset, limit })
+      .subscribe(data => {
+        const { list } = data;
+        let index = offset;
+        list.forEach((n) => {
+          n.id = [n.name, n.domains, n.country].join('');
+          n.index = ++index;
+        });
+        updateListUni(list);
+      });
+    return () => subscription.unsubscribe();
+  }, [offset, limit]);
+
+  useEffect(function likeEffect() {
+    let nextListUniByPage = listUni;
     nextListUniByPage = nextListUniByPage.map(uni => {
       if (listLikedUniByUser.has(uni.id)) {
         uni.liked = true;
@@ -75,7 +96,7 @@ export function ListingPage(props) {
     });
     setListUniByPage(nextListUniByPage);
     return () => { };
-  }, [listUni, limit, offset, listLikedUniByUser]);
+  }, [listUni, listLikedUniByUser]);
 
   useEffect(() => {
     async function fetchData() {
@@ -154,7 +175,7 @@ export function ListingPage(props) {
             nextLabel={isXS ? '>' : 'next'}
             breakLabel={'...'}
             breakClassName={'page-link'}
-            pageCount={getTotalPageCount(listUni.length, 10)}
+            pageCount={getTotalPageCount(totalRecordCount, limit)}
             marginPagesDisplayed={2}
             pageRangeDisplayed={isXS ? 1 : 5}
             onPageChange={handlePageClick}

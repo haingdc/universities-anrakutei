@@ -7,13 +7,15 @@ export const UniversityApi = {
     const paramTuples = [
       ['name', options.uniName],
       ['country', options.country],
+      ['offset', options.offset],
+      ['limit', options.limit],
     ];
     const queryString = paramTuples
-      .filter(([_, fieldVal]) => fieldVal)
+      .filter(([_, fieldVal]) => fieldVal !== undefined)
       .map(([fieldName, fieldVal]) => `${fieldName}=${fieldVal}`)
       .join('&');
 
-    return ajax.getJSON(`http://universities.hipolabs.com/search?${queryString}`);
+    return ajax.getJSON(`/search?${queryString}`);
   },
   async loadLikedUnivesitiesByUser(userPayload) {
     const { mail } = userPayload;
