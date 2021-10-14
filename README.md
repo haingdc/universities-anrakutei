@@ -7,7 +7,20 @@ This web application shows a list of universities from all over the world use ht
 
 How its works? the following features such as sign-in, sign-up, like any university of each user are run by store data to localstorage.
 For simplicity, to sign-in to other account, we don't need sign-out, just open sign-in screen at fill the info. That's all.
-## Available Scripts
+
+## Run script university server
+
+### `cd server`
+access to server directory
+
+### `yarn`
+install packages for server
+
+### `yarn start`
+start development university server
+
+
+## Available Scripts React web app
 
 In the project directory, you can run:
 
