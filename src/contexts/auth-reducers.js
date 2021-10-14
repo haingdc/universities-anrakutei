@@ -18,6 +18,12 @@ export function AuthReducer(initialState, action) {
         user: null,
         loading: false,
       };
+    case 'logout':
+      return {
+        ...initialState,
+        user: null,
+        loading: false,
+      };
     default:
       throw new Error(`Unhandled action type: ${action.type}`);
   }

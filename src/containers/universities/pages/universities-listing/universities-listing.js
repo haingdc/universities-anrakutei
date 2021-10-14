@@ -107,6 +107,8 @@ export function ListingPage(props) {
     }
     if (authContext.user) {
       fetchData();
+    } else {
+      setListLikedUniByUser(new Map());
     }
   }, [authContext.user]);
 

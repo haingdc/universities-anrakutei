@@ -60,7 +60,7 @@ export async function signinUser(dispatch, loginPayload) {
 }
 
 export async function signoutUser(dispatch) {
-  dispatch({ type: 'LOGOUT' });
+  dispatch({ type: 'logout' });
   localStorage.removeItem('currentUser');
   localStorage.removeItem('token');
 }
